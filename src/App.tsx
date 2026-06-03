@@ -41,6 +41,7 @@ type Win = {
   title: string
   difficulty: Difficulty
   xp: number
+  createdDate: string
 }
 
 const difficultyXp: Record<Difficulty, number> = {
@@ -51,29 +52,66 @@ const difficultyXp: Record<Difficulty, number> = {
 
 const winsStorageKey = 'tiny-wins-list'
 
-function parseWinFromSpeech(spokenText: string): Omit<Win, 'id'> {
-  const lowerText = spokenText.toLowerCase()
+function getDateKey(date: Date) {
+  return date.toISOString().split('T')[0]
+}
+
+function getTodayDate() {
+  return getDateKey(new Date())
+}
+
+function getPreviousDate(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00`)
+  date.setDate(date.getDate() - 1)
+
+  return getDateKey(date)
+}
+
+function calculateStreak(wins: Win[]) {
+  const winDates = new Set(wins.map((win) => win.createdDate))
+
+  let streak = 0
+  let dateToCheck = getTodayDate()
+
+  while (winDates.has(dateToCheck)) {
+    streak += 1
+    dateToCheck = getPreviousDate(dateToCheck)
+  }
+
+  return streak
+}
+
+function parseWinFromSpeech(spokenText: string): Omit<Win, 'id' | 'createdDate'> {
+  const difficultyKeywords: Record<Difficulty, string[]> = {
+    Easy: ['easy', 'simple', 'quick'],
+    Medium: ['medium', 'normal', 'moderate'],
+    Hard: ['hard', 'difficult', 'tough', 'challenging'],
+  }
 
   let difficulty: Difficulty = 'Medium'
+  let matchedKeyword = ''
 
-  if (lowerText.includes('easy')) {
-    difficulty = 'Easy'
+  for (const [level, keywords] of Object.entries(difficultyKeywords) as [
+    Difficulty,
+    string[],
+  ][]) {
+    const foundKeyword = keywords.find((keyword) =>
+      new RegExp(`\\b${keyword}\\b`, 'i').test(spokenText),
+    )
+
+    if (foundKeyword) {
+      difficulty = level
+      matchedKeyword = foundKeyword
+      break
+    }
   }
 
-  if (lowerText.includes('hard')) {
-    difficulty = 'Hard'
-  }
-
-  if (lowerText.includes('medium')) {
-    difficulty = 'Medium'
-  }
-
-  const title = spokenText
-    .replace(/\beasy\b/gi, '')
-    .replace(/\bmedium\b/gi, '')
-    .replace(/\bhard\b/gi, '')
-    .replace(/[,.!?]+$/g, '')
-    .trim()
+  const title = matchedKeyword
+    ? spokenText
+        .replace(new RegExp(`\\b${matchedKeyword}\\b`, 'i'), '')
+        .replace(/[,.!?]+$/g, '')
+        .trim()
+    : spokenText.trim()
 
   return {
     title: title || spokenText,
@@ -103,7 +141,10 @@ function App() {
   const [voiceMessage, setVoiceMessage] = useState('Ready to listen')
   const [fallbackText, setFallbackText] = useState('')
 
-  const xpToday = wins.reduce((total, win) => total + win.xp, 0)
+  const today = getTodayDate()
+  const todaysWins = wins.filter((win) => win.createdDate === today)
+  const xpToday = todaysWins.reduce((total, win) => total + win.xp, 0)
+  const streak = calculateStreak(wins)
 
   useEffect(() => {
     localStorage.setItem(winsStorageKey, JSON.stringify(wins))
@@ -121,6 +162,7 @@ function App() {
 
     const newWin: Win = {
       id: Date.now(),
+      createdDate: getTodayDate(),
       ...parsedWin,
     }
 
@@ -238,7 +280,7 @@ function App() {
         <div>
           <p className="summary-label">Streak</p>
           <strong>
-            4 <span>days</span>
+            {streak} <span>{streak === 1 ? 'day' : 'days'}</span>
           </strong>
         </div>
       </section>
@@ -246,11 +288,11 @@ function App() {
       <section className="wins-section" aria-label="Today's wins">
         <h2>Today</h2>
 
-        {wins.length === 0 ? (
+        {todaysWins.length === 0 ? (
           <p className="empty-state">No wins logged yet.</p>
         ) : (
           <div className="wins-list">
-            {wins.map((win) => (
+            {todaysWins.map((win) => (
               <article className="win-card" key={win.id}>
                 <div className="win-icon" aria-hidden="true">
                   ✦
