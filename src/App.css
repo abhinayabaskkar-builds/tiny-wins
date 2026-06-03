@@ -260,3 +260,62 @@ button {
     border-radius: 22px;
   }
 }
+.spoken-preview {
+  width: min(100%, 340px);
+  margin: -4px auto 16px;
+  border-radius: 18px;
+  padding: 10px 14px;
+  color: #4e5c50;
+  background: rgba(255, 253, 247, 0.74);
+  font-size: 13px;
+}
+
+.fallback-form {
+  width: min(100%, 360px);
+  margin: 22px auto 0;
+  text-align: left;
+}
+
+.fallback-form label {
+  display: block;
+  margin: 0 0 8px 2px;
+  color: #8b8f84;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fallback-form div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.fallback-form input {
+  min-width: 0;
+  border: 1px solid #e1d8ca;
+  border-radius: 999px;
+  padding: 11px 14px;
+  color: #2f3b32;
+  background: rgba(255, 253, 247, 0.9);
+}
+
+.fallback-form input:focus {
+  outline: 3px solid rgba(120, 150, 111, 0.2);
+  border-color: #91aa89;
+}
+
+.fallback-form button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: #78966f;
+  font-weight: 700;
+}
+
+.voice-button.listening {
+  background: #9a6b52;
+  box-shadow: 0 30px 82px rgba(154, 107, 82, 0.48);
+}
