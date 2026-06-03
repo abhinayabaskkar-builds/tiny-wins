@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 type BrowserSpeechResultEvent = {
@@ -49,6 +49,8 @@ const difficultyXp: Record<Difficulty, number> = {
   Hard: 50,
 }
 
+const winsStorageKey = 'tiny-wins-list'
+
 function parseWinFromSpeech(spokenText: string): Omit<Win, 'id'> {
   const lowerText = spokenText.toLowerCase()
 
@@ -80,20 +82,32 @@ function parseWinFromSpeech(spokenText: string): Omit<Win, 'id'> {
   }
 }
 
-const initialWins: Win[] = [
-  { id: 1, title: 'Drank water', difficulty: 'Easy', xp: 10 },
-  { id: 2, title: 'Exercised', difficulty: 'Hard', xp: 50 },
-  { id: 3, title: 'Cooked at home', difficulty: 'Medium', xp: 25 },
-]
+function loadWinsFromStorage(): Win[] {
+  const savedWins = localStorage.getItem(winsStorageKey)
+
+  if (!savedWins) {
+    return []
+  }
+
+  try {
+    return JSON.parse(savedWins) as Win[]
+  } catch {
+    return []
+  }
+}
 
 function App() {
-  const [wins, setWins] = useState<Win[]>(initialWins)
+  const [wins, setWins] = useState<Win[]>(loadWinsFromStorage)
   const [isListening, setIsListening] = useState(false)
   const [spokenText, setSpokenText] = useState('')
   const [voiceMessage, setVoiceMessage] = useState('Ready to listen')
   const [fallbackText, setFallbackText] = useState('')
 
   const xpToday = wins.reduce((total, win) => total + win.xp, 0)
+
+  useEffect(() => {
+    localStorage.setItem(winsStorageKey, JSON.stringify(wins))
+  }, [wins])
 
   function addWinFromText(text: string) {
     const trimmedText = text.trim()
@@ -232,22 +246,26 @@ function App() {
       <section className="wins-section" aria-label="Today's wins">
         <h2>Today</h2>
 
-        <div className="wins-list">
-          {wins.map((win) => (
-            <article className="win-card" key={win.id}>
-              <div className="win-icon" aria-hidden="true">
-                ✦
-              </div>
+        {wins.length === 0 ? (
+          <p className="empty-state">No wins logged yet.</p>
+        ) : (
+          <div className="wins-list">
+            {wins.map((win) => (
+              <article className="win-card" key={win.id}>
+                <div className="win-icon" aria-hidden="true">
+                  ✦
+                </div>
 
-              <div>
-                <h3>{win.title}</h3>
-                <p>{win.difficulty}</p>
-              </div>
+                <div>
+                  <h3>{win.title}</h3>
+                  <p>{win.difficulty}</p>
+                </div>
 
-              <strong>+{win.xp} XP</strong>
-            </article>
-          ))}
-        </div>
+                <strong>+{win.xp} XP</strong>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   )
